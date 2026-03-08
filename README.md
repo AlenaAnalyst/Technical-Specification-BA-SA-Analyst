@@ -243,6 +243,12 @@ captchaToken: допустимый токен reCaptcha имеет длину о
 | 400 | CAPTCHA_INVALID | Клиентская | reCAPTCHA verification failed |
 | 400 | CAPTCHA_MISSING | Клиентская | Please verify reCaptcha to register! |
 | 422 | USERNAME_INVALID | Клиентская | The username contains invalid characters |
+| 400 | INVALID_JSON | Клиентская | Invalid JSON format |
+| 400 | MISSING_FIELD | Клиентская | Required field is missing |
+| 400 | FIRST_NAME_INVALID | Клиентская | Incorrect first name |
+| 400 | LAST_NAME_INVALID | Клиентская | Incorrect last name |
+| 429 | RATE_LIMIT_EXCEEDED | Клиентская | Request limit exceeded |
+| 500 | DATABASE_ERROR | Серверная | Database error |
 | 500 | INTERNAL_ERROR | Серверная | Internal server error |
 | 503 | SERVICE_UNAVAILABLE | Серверная | The service is temporarily unavailable |
 
