@@ -1,6 +1,6 @@
 # Техническое задание (БА+СА) аналитик  
 Тестовое задание на позицию Junior Fullstack-аналитик  
-## Задание 1  
+## Задача 1  
 - Сделайте модель в нотации BPMN 2.0 по описанию рабочего потока ниже. Указать вопросы, противоречия к описанию рабочего потока.
 
 (Вопросы указаны прямо на схеме и соеденены с местами их возниконвения.  
@@ -8,7 +8,7 @@
 
 <p><img src="https://github.com/AlenaAnalyst/Technical-Specification-BA-SA-Analyst/blob/main/Задание%201.png" alt="Альтернативный текст" width="4221" height="3790" /></p>
 
-## Задание 2  
+## Задача 2  
 - Сделать верхнеуровневую постановку в формате User story и описать требования к новой функциональности в формате вариантов использования (Use Case).  
 - Опционально: нарисовать диаграмму процесса в удобной нотации.   
 
@@ -182,4 +182,141 @@
 - всплывающие подсказки
 - модерация изображений/видео
 
-### Диаграмма процесса
+### Диаграмма процесса "Публикация товара на маркетплейсе"  
+<p><img src="https://github.com/AlenaAnalyst/Technical-Specification-BA-SA-Analyst/blob/main/Задание%202.png" alt="Альтернативный текст" width="6141" height="3790" /></p>  
+
+## Задача 3  
+### Основная информация
+| HTTP Метод | POST |
+|---------------|---------|
+| URL | /api/v1/auth/register (Требует согласования с Backend-lead, возможно "/api/users") |
+| Content-Type | application/json |
+| Авторизация | Не требуется (публичный эндпоинт) |
+### Входные параметры (обязательные поля)
+| Название поля | Тип | Описание | Обязательный |
+|---------------|---------|----------|------------|
+| firstName | String | Имя пользователя | да |
+| lastName | String | Фамилия пользователя | да |
+| username | String | Логин пользователя | да |
+| password | String | Пароль | да |
+| captchaToken | String | подтверждение "I am not a robot" (Валидный токен reCaptcha) | да |
+
+Правила валидации пароля:  
+- Минимум 8 символов
+- Хотя бы 1 цифра (0-9)
+- Хотя бы 1 заглавная буква (A-Z)
+- Хотя бы 1 строчная буква (a-z)
+- Хотя бы 1 специальный символ
+
+**Ограничения остальных полей требуют уточнения у команды.**  
+**Но, если взять стандартные параметры ограничений:**  
+firstName: 1-50 символов, букв латинского алфавита(A-Z,a-z)    
+lastName: 1-50 символов, букв латинского алфавита(A-Z,a-z)    
+username: 3-30 символа, букв латинского алфавита(A-Z,a-z) и цифры(0-9), уникальный в системе    
+captchaToken: допустимый токен reCaptcha имеет длину около 300–400 символов, но встречаются длиной 2361 символов, должен быть валидирован через Google reCAPTCHA    
+### Выходные параметры при успешном ответе (HTTP 200/201)
+Предлагаемая структура:  
+| Название поля | Тип | Описание | Обязательный | Ограничения |
+|---------------|---------|----------|-----------|-----------|
+| success | boolean | Флаг | да | Всегда True |
+| message | string | Сообщение об успехе | да | текст из предопределённого списка |
+| data.userId | string (UUID) | ID созданного пользователя | да | Стандарт UUID v4 |
+| data.username | string | Логин пользователя | да | Значение = входному username |
+| data.createdAt | string (ISO 8601) | Дата создания аккаунта | да | Формат: YYYY-MM-DDTHH:mm:ssZ (UTC) |
+| data.token | string (JWT) | Токен авторизации (если предусмотрен автоматический логин) | нет | Формат: header.payload.signature (base64url) |
+### Выходные параметры при ответе с ошибкой (HTTP 4xx/5xx)  
+Предлагаемая структура:  
+| Название поля | Тип | Описание | Обязательность | Ограничения |
+|---------------|---------|----------|----|---------|
+| success | boolean | Флаг | да | Всегда False |
+| errorCode | string | Код ошибки для разработчиков | да | Значение из фиксированного списка |
+| message | string | Сообщение для пользователя | да | Длина: <= 200 символов; без чувствительных данных (паролей, токенов) |
+| details | array | Детали валидации (какие поля не прошли) | нет | Макс. 10 элементов |
+| timestamp | string (ISO 8601) | Время возникновения ошибки | да | Формат: YYYY-MM-DDTHH:mm:ssZ (UTC) |
+### Описание ошибок
+| Код ошибки | ErrorCode | Тип ошибки | Сообщение |
+|---------------|---------|----------|------------|
+| 400 | VALIDATION_ERROR | Клиентская | Incorrect data in the request |
+| 400 | PASSWORD_WEAK | Клиентская | Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), one uppercase ('A'-'Z'), one lowercase ('a'-'z'), one special character and Password must be eight characters or longer. |
+| 409 | USER_EXISTS | Клиентская | User exists! |
+| 400 | CAPTCHA_INVALID | Клиентская | reCAPTCHA verification failed |
+| 400 | CAPTCHA_MISSING | Клиентская | Please verify reCaptcha to register! |
+| 422 | USERNAME_INVALID | Клиентская | The username contains invalid characters |
+| 500 | INTERNAL_ERROR | Серверная | Internal server error |
+| 503 | SERVICE_UNAVAILABLE | Серверная | The service is temporarily unavailable |
+
+### Пример запроса
+#### Успешный запрос:  
+**http**  
+```
+POST /api/v1/auth/register HTTP/1.1  
+Host: bookstore.com  
+Content-Type: application/json  
+
+{  
+  "firstName": "Ivan",  
+  "lastName": "Ivanov",  
+  "username": "ivan_ivanov",  
+  "password": "SecurePass123!",  
+  "captchaToken": "03AGdBq24PBCb5vXZK..."  
+}  
+```
+### Примеры ответов
+#### Ответ успешного сценария:  
+**json**  
+```
+{  
+  "success": true,  
+  "message": "User registered successfully",  
+  "data": {  
+    "userId": "550e8400-e29b-41d4-a716-446655440000",  
+    "username": "ivan_ivanov",  
+    "createdAt": "2025-01-15T10:30:00Z",  
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  
+  }  
+}  
+```
+#### Ответ сценария с ошибкой (Пользователь существует (409) ) :  
+**json**  
+```
+{  
+  "success": false,  
+  "errorCode": "USER_EXISTS",  
+  "message": "Пользователь с таким именем уже существует",  
+  "details": [  
+    {  
+      "field": "username",  
+      "value": "ivan_ivanov",  
+      "reason": "already_taken"  
+    }  
+  ],  
+  "timestamp": "2025-01-15T10:30:00Z"  
+}  
+```
+#### Ответ сценария с ошибкой (Слабый пароль (400) ) :  
+**json**   
+```
+{  
+  "success": false,  
+  "errorCode": "PASSWORD_WEAK",  
+  "message": "Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), one uppercase ('A'-'Z'), one lowercase ('a'-'z'), one special character and Password must be eight characters or longer.",  
+  "details": [  
+    {  
+      "field": "password",  
+      "reason": "Must contain at least one uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long"
+    }  
+  ],  
+  "timestamp": "2025-01-15T10:30:00Z"  
+}  
+```
+#### Ответ сценария с ошибкой (Не пройдена reCaptcha (400) ) :  
+**json**   
+```
+{  
+  "success": false,  
+  "errorCode": "CAPTCHA_MISSING",  
+  "message": "Please verify reCaptcha to register!",  
+  "details": [],  
+  "timestamp": "2025-01-15T10:30:00Z"  
+}
+```
